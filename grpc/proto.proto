@@ -1,0 +1,38 @@
+syntax = "proto3";
+option go_package = "Replication/grpc/proto";
+
+message BidIn{
+  int64 Bid = 1;
+  int64 ls = 2;
+  int64 clientId = 3;
+}
+
+message BidAck{
+string ack = 1;
+int64 ls = 2;
+}
+
+message Empty{
+}
+
+message ResultOut{
+  int64 highestBid = 1;
+}
+
+message imAlive{
+  bool ack = 1;
+}
+
+message DataBackup {
+  int64 highestBid = 1;
+  int64 ls = 2;
+  bool auctionGoing = 3;
+  int64 timeLeftOfAuction = 4;
+}
+
+service Auction{
+  rpc Bid(BidIn) returns (BidAck);
+  rpc Result(Empty) returns (ResultOut);
+  rpc HeartBeat(Empty) returns (imAlive);
+  rpc BackUpToReplicas(DataBackup) returns (Empty);
+}
