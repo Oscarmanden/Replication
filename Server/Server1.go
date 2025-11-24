@@ -58,17 +58,20 @@ func main() {
 		}
 		if txt == "start" {
 			auctionGoing = true
-			fmt.Println("The auction has started")
 			go func() {
 				for {
+					//Every 10 seconds print time left of auction, and the current highest bid
 					if TimeLeftOfAuction%10 == 0 {
 						fmt.Println("There is", TimeLeftOfAuction, " seconds left of the auction")
-						fmt.Println("The highest bid is", highestBid)
+						fmt.Println("The current highest bid is", highestBid)
 					}
-
+					//End the auction, and resets the highestBid value
 					if TimeLeftOfAuction == 0 {
 						fmt.Println("The auction has finished")
+						fmt.Println("The highest bid was", highestBid)
+						fmt.Println("The winner is: ", leadingClientId)
 						auctionGoing = false
+						highestBid = 0
 						break
 					}
 					TimeLeftOfAuction = TimeLeftOfAuction - 1

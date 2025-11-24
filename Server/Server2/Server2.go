@@ -24,7 +24,6 @@ var leadingClientId int64 = 0
 
 type Auction struct {
 	proto.UnimplementedAuctionServer
-	bids []int64
 }
 
 func NewServer() *Auction { return &Auction{} }
@@ -71,19 +70,21 @@ func main() {
 		if txt == "start" {
 			auctionGoing = true
 			fmt.Println("The auction has started")
-			TimeLeftOfAuction := 100
+			TimeLeftOfAuction := 50
 			go func() {
 				for {
+					//Every 10 seconds print time left of auction, and the current highest bid
 					if TimeLeftOfAuction%10 == 0 {
 						fmt.Println("There is", TimeLeftOfAuction, " seconds left of the auction")
-						fmt.Println("The highest bid is", highestBid)
+						fmt.Println("The current highest bid is", highestBid)
 					}
-
+					//End the auction, and resets the highestBid value
 					if TimeLeftOfAuction == 0 {
 						fmt.Println("The auction has finished")
-						fmt.Println("The highest bid is", highestBid)
+						fmt.Println("The highest bid was", highestBid)
 						fmt.Println("The winner is: ", leadingClientId)
 						auctionGoing = false
+						highestBid = 0
 						break
 					}
 					TimeLeftOfAuction = TimeLeftOfAuction - 1
@@ -115,13 +116,6 @@ func (a *Auction) Bid(ctx context.Context, BidIn *proto.BidIn) (*proto.BidAck, e
 	}, nil
 
 }
-
-/*
-	BidAck:
-		Success
-		Failure
-		Exception
-*/
 
 func PLANB(grpcServer *grpc.Server) {
 	listener, err := net.Listen("tcp", "localhost:50050")
