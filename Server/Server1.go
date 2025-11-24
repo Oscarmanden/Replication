@@ -20,7 +20,7 @@ var highestBid int64 = 0
 var leadingClientId int64 = 0
 var auctionGoing = false
 var auctionClient proto.AuctionClient
-var TimeLeftOfAuction int64 = 10
+var TimeLeftOfAuction int64 = 30
 
 type Auction struct {
 	proto.UnimplementedAuctionServer
@@ -57,6 +57,7 @@ func main() {
 			os.Exit(0)
 		}
 		if txt == "start" {
+			highestBid = 0
 			auctionGoing = true
 			fmt.Println("The auction has started")
 			go func() {
@@ -95,14 +96,12 @@ func (a *Auction) Bid(ctx context.Context, BidIn *proto.BidIn) (*proto.BidAck, e
 			Ack: "Success",
 			Ls:  serverLogicalTime,
 		}, nil
-
+	} else {
+		return &proto.BidAck{
+			Ack: fmt.Sprintf("Your bid is lower than the highest bid, highest bid: %d\n", highestBid),
+			Ls:  serverLogicalTime,
+		}, nil
 	}
-
-	return &proto.BidAck{
-		Ack: fmt.Sprintf("Your bid is lower than the highest bid, highest bid: %d\n", highestBid),
-		Ls:  serverLogicalTime,
-	}, nil
-
 }
 
 func (a *Auction) Result(ctx context.Context, x *proto.Empty) (*proto.ResultOut, error) {

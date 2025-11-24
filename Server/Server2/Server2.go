@@ -82,7 +82,7 @@ func main() {
 					if TimeLeftOfAuction == 0 {
 						fmt.Println("The auction has finished")
 						fmt.Println("The highest bid is", highestBid)
-						fmt.Println("The winner is: ", leadingClientId)
+						fmt.Println("The client winner is: ", leadingClientId)
 						auctionGoing = false
 						break
 					}
@@ -116,13 +116,6 @@ func (a *Auction) Bid(ctx context.Context, BidIn *proto.BidIn) (*proto.BidAck, e
 
 }
 
-/*
-	BidAck:
-		Success
-		Failure
-		Exception
-*/
-
 func PLANB(grpcServer *grpc.Server) {
 	listener, err := net.Listen("tcp", "localhost:50050")
 	if err != nil {
@@ -155,4 +148,10 @@ func (a *Auction) BackUpToReplicas(ctx context.Context, data *proto.DataBackup) 
 	auctionGoing = data.AuctionGoing
 	TimeLeftOfAuction = data.TimeLeftOfAuction
 	return &proto.Empty{}, nil
+}
+
+func (a *Auction) Result(ctx context.Context, x *proto.Empty) (*proto.ResultOut, error) {
+	return &proto.ResultOut{
+		HighestBid: highestBid,
+	}, nil
 }

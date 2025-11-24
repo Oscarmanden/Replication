@@ -4,7 +4,6 @@ import (
 	proto "Replication/grpc"
 	"bufio"
 	"context"
-	"flag"
 	"fmt"
 	"log"
 	"math/rand"
@@ -21,10 +20,6 @@ var ls int64 = 0
 var client_id int64
 
 func main() {
-	//
-	idFlag := flag.Int64("id", 1, "my node id (1..3)")
-	flag.Parse()
-	client_id = int64(*idFlag)
 	conn, err := grpc.NewClient(":50050", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Not working")
@@ -44,7 +39,9 @@ func main() {
 		case "bid":
 			Value = rng.Int63n(100000)
 		case "result":
-			go func() { resp, _ := client.Result(ctx, &proto.Empty{}); fmt.Println(resp.HighestBid) }()
+			resp, _ := client.Result(ctx, &proto.Empty{})
+			fmt.Println("the highest bid is", resp.GetHighestBid())
+			continue
 		default:
 			//
 			Value, err = strconv.ParseInt(text, 10, 64)
@@ -55,7 +52,6 @@ func main() {
 		}
 		fmt.Printf("Bid: %d\n", Value)
 
-		ls = ls + 1
 		// sending bid
 		req := &proto.BidIn{Bid: Value, Ls: ls, ClientId: client_id}
 
@@ -67,8 +63,6 @@ func main() {
 			continue
 		}
 		fmt.Println(resp.Ack)
-		if ls < resp.Ls { // && id < BidIn.Nid))
-			ls = resp.Ls + 1
-		}
+
 	}
 }
