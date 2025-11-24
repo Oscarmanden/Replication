@@ -30,7 +30,9 @@ type Auction struct {
 func NewServer() *Auction { return &Auction{} }
 
 func main() {
+	// Set up gRPC server
 	grpcServer := grpc.NewServer()
+
 	svc := NewServer()
 	proto.RegisterAuctionServer(grpcServer, svc)
 	listener, err := net.Listen("tcp", "localhost:50051")
@@ -41,16 +43,20 @@ func main() {
 	go func() {
 		grpcServer.Serve(listener)
 	}()
+	// Set up connection to Server 1
 	conn, err := grpc.NewClient(":50050", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("kan ikke oprette mig som client")
 	}
+
 	auctionClient := proto.NewAuctionClient(conn)
 	go func() {
 		for {
+			// check if primary server is alive every 10 seconds by sending heartbeat and waiting for response
 			fmt.Println("Sending a HeartBeat to server 1")
 			resp, err := auctionClient.HeartBeat(context.Background(), &proto.Empty{})
 			if err != nil {
+				// activate plan B if no response from primary
 				fmt.Println("CHAOS ALARM")
 				fmt.Println(err, resp)
 				PLANB(grpcServer)
@@ -59,6 +65,7 @@ func main() {
 			time.Sleep(10 * time.Second)
 		}
 	}()
+
 	for {
 		reader := bufio.NewReader(os.Stdin)
 		line, _ := reader.ReadString('\n')
@@ -94,7 +101,7 @@ func main() {
 	}
 }
 
-// recieve bid
+// recieve bid update logical time and highest bid
 func (a *Auction) Bid(ctx context.Context, BidIn *proto.BidIn) (*proto.BidAck, error) {
 	if ls < BidIn.Ls { // && id < BidIn.Nid))
 		ls = BidIn.Ls + 1
@@ -116,6 +123,8 @@ func (a *Auction) Bid(ctx context.Context, BidIn *proto.BidIn) (*proto.BidAck, e
 
 }
 
+// Redundancy plan when primary server fails
+// start server as primary if auction is still ongoing(has time left)
 func PLANB(grpcServer *grpc.Server) {
 	listener, err := net.Listen("tcp", "localhost:50050")
 	if err != nil {
@@ -142,6 +151,7 @@ func PLANB(grpcServer *grpc.Server) {
 	}
 }
 
+// receive backup from primary
 func (a *Auction) BackUpToReplicas(ctx context.Context, data *proto.DataBackup) (*proto.Empty, error) {
 	highestBid = data.HighestBid
 	ls = data.Ls
