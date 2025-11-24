@@ -31,12 +31,14 @@ func NewServer() *Auction {
 }
 
 func main() {
+	// Set up gRPC server
 	listener, err := net.Listen("tcp", "localhost:50050")
 	if err != nil {
 		log.Fatalf("Lorte program det virker ikke", err)
 	}
 	grpcServer := grpc.NewServer()
 	svc := NewServer()
+	// Set up connection to Server 2
 	conn, err := grpc.NewClient(":50051", grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		log.Fatalf("Ingen forbindelse til Server 1")
@@ -48,6 +50,7 @@ func main() {
 		grpcServer.Serve(listener)
 	}()
 	for {
+		// command line input
 		reader := bufio.NewReader(os.Stdin)
 		line, _ := reader.ReadString('\n')
 		txt := strings.TrimSpace(line)
@@ -58,20 +61,20 @@ func main() {
 		}
 		if txt == "start" {
 			auctionGoing = true
+			fmt.Println("The auction has started")
+			// timer for auction
 			go func() {
 				for {
-					//Every 10 seconds print time left of auction, and the current highest bid
 					if TimeLeftOfAuction%10 == 0 {
 						fmt.Println("There is", TimeLeftOfAuction, " seconds left of the auction")
-						fmt.Println("The current highest bid is", highestBid)
+						fmt.Println("The highest bid is", highestBid)
 					}
-					//End the auction, and resets the highestBid value
+
 					if TimeLeftOfAuction == 0 {
 						fmt.Println("The auction has finished")
-						fmt.Println("The highest bid was", highestBid)
+						fmt.Println("The highest bid is", highestBid)
 						fmt.Println("The winner is: ", leadingClientId)
 						auctionGoing = false
-						highestBid = 0
 						break
 					}
 					TimeLeftOfAuction = TimeLeftOfAuction - 1
@@ -93,6 +96,7 @@ func (a *Auction) Bid(ctx context.Context, BidIn *proto.BidIn) (*proto.BidAck, e
 	if BidIn.Bid > highestBid {
 		highestBid = BidIn.Bid
 		leadingClientId = BidIn.ClientId
+		// everytime a new winner appears, we update the backup replicas
 		sendDataBackup()
 		return &proto.BidAck{
 			Ack: "Success",
@@ -129,6 +133,7 @@ func (a *Auction) HeartBeat(ctx context.Context, x *proto.Empty) (*proto.ImAlive
 
 }
 
+// updates backup replicas with current data
 func sendDataBackup() {
 	ctx := context.Background()
 	data := &proto.DataBackup{
