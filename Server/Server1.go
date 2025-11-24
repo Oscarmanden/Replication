@@ -118,14 +118,6 @@ func (a *Auction) Result(ctx context.Context, x *proto.Empty) (*proto.ResultOut,
 	}, nil
 }
 
-/*
-BidAck:
-
-	Success
-	Failure
-	Exception
-*/
-
 func (a *Auction) HeartBeat(ctx context.Context, x *proto.Empty) (*proto.ImAlive, error) {
 	return &proto.ImAlive{
 		Ack: true,
